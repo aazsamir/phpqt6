@@ -54,7 +54,7 @@ class Widget implements WidgetInterface
     public function setLayout(VBoxLayout|HBoxLayout $layout): void
     {
         $this->layout = $layout;
-        $layout = $layout instanceof VBoxLayout ? $layout->getQt() : $layout->getQt();
+        $layout = $layout->getQt();
         $this->widget->setLayout($layout);
     }
 
