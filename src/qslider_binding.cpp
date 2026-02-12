@@ -93,6 +93,9 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_QSlider_show, 0, 0, IS_VOID, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_QSlider_hide, 0, 0, IS_VOID, 0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_QSlider_setGeometry, 0, 4, IS_VOID, 0)
     ZEND_ARG_TYPE_INFO(0, x, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(0, y, IS_LONG, 0)
@@ -197,6 +200,17 @@ PHP_METHOD(QSlider, show)
     }
 }
 
+// hide
+PHP_METHOD(QSlider, hide)
+{
+    ZEND_PARSE_PARAMETERS_NONE();
+    
+    qslider_object *intern = Z_QSLIDER_OBJ_P(ZEND_THIS);
+    if (intern->slider) {
+        intern->slider->hide();
+    }
+}
+
 // setGeometry
 PHP_METHOD(QSlider, setGeometry)
 {
@@ -239,6 +253,7 @@ static const zend_function_entry qslider_methods[] = {
     PHP_ME(QSlider, setRange, arginfo_class_QSlider_setRange, ZEND_ACC_PUBLIC)
     PHP_ME(QSlider, onValueChanged, arginfo_class_QSlider_onValueChanged, ZEND_ACC_PUBLIC)
     PHP_ME(QSlider, show, arginfo_class_QSlider_show, ZEND_ACC_PUBLIC)
+    PHP_ME(QSlider, hide, arginfo_class_QSlider_hide, ZEND_ACC_PUBLIC)
     PHP_ME(QSlider, setGeometry, arginfo_class_QSlider_setGeometry, ZEND_ACC_PUBLIC)
     PHP_ME(QSlider, setStyleSheet, arginfo_class_QSlider_setStyleSheet, ZEND_ACC_PUBLIC)
     PHP_FE_END

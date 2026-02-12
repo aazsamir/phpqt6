@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Aazsamir\Qtlib;
 
-class Slider
+class Slider implements WidgetInterface
 {
     private \Qt\Slider $slider;
 
@@ -60,6 +60,11 @@ class Slider
         $this->slider->show();
     }
 
+    public function hide(): void
+    {
+        $this->slider->hide();
+    }
+
     public function setGeometry(int $x, int $y, int $width, int $height): void
     {
         $this->x = $x;
@@ -74,7 +79,7 @@ class Slider
         $this->slider->setStyleSheet($style);
     }
 
-    public function getQtSlider(): \Qt\Slider
+    public function getQt(): mixed
     {
         return $this->slider;
     }

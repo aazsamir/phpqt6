@@ -374,6 +374,12 @@ namespace Qt {
         public function show(): void {}
 
         /**
+         * hide
+         * @return void
+         */
+        public function hide(): void {}
+
+        /**
          * setGeometry
          * @param int $x
          * @param int $y
