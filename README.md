@@ -69,6 +69,12 @@ extension=phpqt6.so
 php generate_stubs.php > qt6.stub.php
 ```
 
+### 5. Add wrapper library to your project
+
+```bash
+composer require aazsamir/phpqt6lib:dev-main
+```
+
 ## License
 
 GNU General Public License v3.0 (GPL-3.0)
