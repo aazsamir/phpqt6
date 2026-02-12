@@ -2051,6 +2051,13 @@ namespace Qt {
          * @return bool
          */
         public function isSingleShot(): bool {}
+
+        /**
+         * onTimeout
+         * @param callable $callback
+         * @return void
+         */
+        public function onTimeout(callable $callback): void {}
     }
 
     /**

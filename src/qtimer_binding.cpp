@@ -4,6 +4,49 @@
 zend_class_entry *qt_ce_QTimer;
 zend_object_handlers qt_object_handlers_QTimer;
 
+// Callback wrapper for timeout signal
+class PHPTimerCallback : public QObject {
+    Q_OBJECT
+
+public:
+    explicit PHPTimerCallback(QTimer *timer) : QObject(timer) {
+        connect(timer, &QTimer::timeout, this, &PHPTimerCallback::onTimeout);
+    }
+
+    ~PHPTimerCallback() {
+        if (php_callback) {
+            zval_ptr_dtor(php_callback);
+            efree(php_callback);
+            php_callback = nullptr;
+        }
+    }
+
+    void setCallback(zval *callback) {
+        if (php_callback) {
+            zval_ptr_dtor(php_callback);
+            efree(php_callback);
+        }
+        php_callback = (zval*)emalloc(sizeof(zval));
+        ZVAL_COPY(php_callback, callback);
+    }
+
+public slots:
+    void onTimeout() {
+        if (!php_callback || Z_TYPE_P(php_callback) == IS_UNDEF) {
+            return;
+        }
+
+        zval retval;
+        ZVAL_UNDEF(&retval);
+        if (call_user_function(NULL, NULL, php_callback, &retval, 0, NULL) == SUCCESS) {
+            zval_ptr_dtor(&retval);
+        }
+    }
+
+private:
+    zval *php_callback = nullptr;
+};
+
 // Arginfo declarations
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_QTimer___construct, 0, 0, 0)
 ZEND_END_ARG_INFO()
@@ -30,6 +73,10 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_QTimer_setSingleShot, 0, 1
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_QTimer_isSingleShot arginfo_class_QTimer_isActive
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_QTimer_onTimeout, 0, 1, IS_VOID, 0)
+    ZEND_ARG_TYPE_INFO(0, callback, IS_CALLABLE, 0)
+ZEND_END_ARG_INFO()
 
 // Constructor: new Timer()
 PHP_METHOD(QTimer, __construct) {
@@ -114,6 +161,22 @@ PHP_METHOD(QTimer, isSingleShot) {
     RETURN_BOOL(timer->isSingleShot());
 }
 
+// void onTimeout(callable $callback)
+PHP_METHOD(QTimer, onTimeout) {
+    zval *callback;
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ZVAL(callback)
+    ZEND_PARSE_PARAMETERS_END();
+
+    qt_object *intern = Z_QT_OBJ_P(getThis());
+    QTimer *timer = static_cast<QTimer*>(intern->ptr);
+    if (timer) {
+        PHPTimerCallback *cb = new PHPTimerCallback(timer);
+        cb->setCallback(callback);
+    }
+}
+
 // Method entries
 static const zend_function_entry qt_QTimer_methods[] = {
     PHP_ME(QTimer, __construct, arginfo_class_QTimer___construct, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
@@ -124,6 +187,7 @@ static const zend_function_entry qt_QTimer_methods[] = {
     PHP_ME(QTimer, isActive, arginfo_class_QTimer_isActive, ZEND_ACC_PUBLIC)
     PHP_ME(QTimer, setSingleShot, arginfo_class_QTimer_setSingleShot, ZEND_ACC_PUBLIC)
     PHP_ME(QTimer, isSingleShot, arginfo_class_QTimer_isSingleShot, ZEND_ACC_PUBLIC)
+    PHP_ME(QTimer, onTimeout, arginfo_class_QTimer_onTimeout, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };
 
@@ -137,3 +201,5 @@ void qt_register_QTimer_class() {
     qt_object_handlers_QTimer.offset = XtOffsetOf(qt_object, std);
     qt_object_handlers_QTimer.free_obj = qt_object_free;
 }
+
+#include "qtimer_binding.moc"
