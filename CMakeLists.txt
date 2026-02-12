@@ -48,7 +48,24 @@ set(SOURCES
     src/qslider_binding.cpp
     src/qvboxlayout_binding.cpp
     src/qhboxlayout_binding.cpp
-    src/stub_widgets.cpp
+    src/qtabwidget_binding.cpp
+    src/qtextedit_binding.cpp
+    src/qcombobox_binding.cpp
+    src/qcheckbox_binding.cpp
+    src/qradiobutton_binding.cpp
+    src/qspinbox_binding.cpp
+    src/qmessagebox_binding.cpp
+    src/qdialog_binding.cpp
+    src/qfiledialog_binding.cpp
+    src/qtablewidget_binding.cpp
+    src/qtablewidgetitem_binding.cpp
+    src/qsplitter_binding.cpp
+    src/qscrollarea_binding.cpp
+    src/qprogressbar_binding.cpp
+    src/qgridlayout_binding.cpp
+    src/qformlayout_binding.cpp
+    src/qlistwidget_binding.cpp
+    src/qtimer_binding.cpp
 )
 
 # Create the PHP extension

@@ -26,6 +26,20 @@ extern "C" {
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <Qt>
+#include <QTabWidget>
+#include <QMessageBox>
+#include <QDialog>
+#include <QFileDialog>
+#include <QSpinBox>
+#include <QTableWidget>
+#include <QTableWidgetItem>
+#include <QSplitter>
+#include <QScrollArea>
+#include <QProgressBar>
+#include <QGridLayout>
+#include <QFormLayout>
+#include <QListWidget>
+#include <QTimer>
 
 #define PHP_QT6_EXTNAME "phpqt6"
 #define PHP_QT6_VERSION "0.1.0"
@@ -35,170 +49,81 @@ extern "C" {
 __attribute__((visibility("default"))) extern zend_module_entry phpqt6_module_entry;
 }
 #define phpext_phpqt6_ptr &phpqt6_module_entry
+struct qt_object {
+    void *ptr;
+    void (*native_dtor)(void *);
+    bool skip_dtor;
+    zend_object std;
+};
+
+// Object creation/destruction
+zend_object* qt_object_new(zend_class_entry *ce);
+void qt_object_free(zend_object *object);
+
+// Macro for unified object access
+#define Z_QT_OBJ_P(zv) ((qt_object*)((char*)Z_OBJ_P(zv) - XtOffsetOf(qt_object, std)))
 
 // Class entries
-extern zend_class_entry *qapplication_ce;
-extern zend_class_entry *qwidget_ce;
-extern zend_class_entry *qpushbutton_ce;
-extern zend_class_entry *qlabel_ce;
-extern zend_class_entry *qmainwindow_ce;
-extern zend_class_entry *qlineedit_ce;
-extern zend_class_entry *qtextedit_ce;
-extern zend_class_entry *qcheckbox_ce;
-extern zend_class_entry *qradiobutton_ce;
-extern zend_class_entry *qcombobox_ce;
-extern zend_class_entry *qslider_ce;
-extern zend_class_entry *qvboxlayout_ce;
-extern zend_class_entry *qhboxlayout_ce;
+extern zend_class_entry *qt_ce_QApplication;
+extern zend_class_entry *qt_ce_QObject;
+extern zend_class_entry *qt_ce_QWidget;
+extern zend_class_entry *qt_ce_QLayout;
+extern zend_class_entry *qt_ce_QPushButton;
+extern zend_class_entry *qt_ce_QLabel;
+extern zend_class_entry *qt_ce_QMainWindow;
+extern zend_class_entry *qt_ce_QLineEdit;
+extern zend_class_entry *qt_ce_QSlider;
+extern zend_class_entry *qt_ce_QVBoxLayout;
+extern zend_class_entry *qt_ce_QHBoxLayout;
+extern zend_class_entry *qt_ce_QTabWidget;
+extern zend_class_entry *qt_ce_QTextEdit;
+extern zend_class_entry *qt_ce_QComboBox;
+extern zend_class_entry *qt_ce_QCheckBox;
+extern zend_class_entry *qt_ce_QRadioButton;
+extern zend_class_entry *qt_ce_QSpinBox;
+extern zend_class_entry *qt_ce_QMessageBox;
+extern zend_class_entry *qt_ce_QDialog;
+extern zend_class_entry *qt_ce_QFileDialog;
+extern zend_class_entry *qt_ce_QTableWidget;
+extern zend_class_entry *qt_ce_QTableWidgetItem;
+extern zend_class_entry *qt_ce_QSplitter;
+extern zend_class_entry *qt_ce_QScrollArea;
+extern zend_class_entry *qt_ce_QProgressBar;
+extern zend_class_entry *qt_ce_QGridLayout;
+extern zend_class_entry *qt_ce_QFormLayout;
+extern zend_class_entry *qt_ce_QListWidget;
+extern zend_class_entry *qt_ce_QTimer;
 
-// Object structures
-struct qapplication_object {
-    QApplication *app;
-    zend_object std;
-};
-
-struct qwidget_object {
-    QWidget *widget;
-    zend_object std;
-};
-
-struct qpushbutton_object {
-    QPushButton *button;
-    zend_object std;
-};
-
-struct qlabel_object {
-    QLabel *label;
-    zend_object std;
-};
-
-struct qmainwindow_object {
-    QMainWindow *window;
-    zend_object std;
-};
-
-struct qlineedit_object {
-    QLineEdit *lineedit;
-    zend_object std;
-};
-
-struct qtextedit_object {
-    QTextEdit *textedit;
-    zend_object std;
-};
-
-struct qcheckbox_object {
-    QCheckBox *checkbox;
-    zend_object std;
-};
-
-struct qradiobutton_object {
-    QRadioButton *radiobutton;
-    zend_object std;
-};
-
-struct qcombobox_object {
-    QComboBox *combobox;
-    zend_object std;
-};
-
-struct qslider_object {
-    QSlider *slider;
-    zend_object std;
-};
-
-struct qvboxlayout_object {
-    QVBoxLayout *layout;
-    zend_object std;
-};
-
-struct qhboxlayout_object {
-    QHBoxLayout *layout;
-    zend_object std;
-};
-
-// Helper macros
-#define Z_QAPPLICATION_OBJ_P(zv) qapplication_fetch_object(Z_OBJ_P(zv))
-#define Z_QWIDGET_OBJ_P(zv) qwidget_fetch_object(Z_OBJ_P(zv))
-#define Z_QPUSHBUTTON_OBJ_P(zv) qpushbutton_fetch_object(Z_OBJ_P(zv))
-#define Z_QLABEL_OBJ_P(zv) qlabel_fetch_object(Z_OBJ_P(zv))
-#define Z_QMAINWINDOW_OBJ_P(zv) qmainwindow_fetch_object(Z_OBJ_P(zv))
-#define Z_QLINEEDIT_OBJ_P(zv) qlineedit_fetch_object(Z_OBJ_P(zv))
-#define Z_QTEXTEDIT_OBJ_P(zv) qtextedit_fetch_object(Z_OBJ_P(zv))
-#define Z_QCHECKBOX_OBJ_P(zv) qcheckbox_fetch_object(Z_OBJ_P(zv))
-#define Z_QRADIOBUTTON_OBJ_P(zv) qradiobutton_fetch_object(Z_OBJ_P(zv))
-#define Z_QCOMBOBOX_OBJ_P(zv) qcombobox_fetch_object(Z_OBJ_P(zv))
-#define Z_QSLIDER_OBJ_P(zv) qslider_fetch_object(Z_OBJ_P(zv))
-#define Z_QVBOXLAYOUT_OBJ_P(zv) qvboxlayout_fetch_object(Z_OBJ_P(zv))
-#define Z_QHBOXLAYOUT_OBJ_P(zv) qhboxlayout_fetch_object(Z_OBJ_P(zv))
-
-// Fetch object helpers
-static inline qapplication_object* qapplication_fetch_object(zend_object *obj) {
-    return (qapplication_object*)((char*)(obj) - XtOffsetOf(qapplication_object, std));
-}
-
-static inline qwidget_object* qwidget_fetch_object(zend_object *obj) {
-    return (qwidget_object*)((char*)(obj) - XtOffsetOf(qwidget_object, std));
-}
-
-static inline qpushbutton_object* qpushbutton_fetch_object(zend_object *obj) {
-    return (qpushbutton_object*)((char*)(obj) - XtOffsetOf(qpushbutton_object, std));
-}
-
-static inline qlabel_object* qlabel_fetch_object(zend_object *obj) {
-    return (qlabel_object*)((char*)(obj) - XtOffsetOf(qlabel_object, std));
-}
-
-static inline qmainwindow_object* qmainwindow_fetch_object(zend_object *obj) {
-    return (qmainwindow_object*)((char*)(obj) - XtOffsetOf(qmainwindow_object, std));
-}
-
-static inline qlineedit_object* qlineedit_fetch_object(zend_object *obj) {
-    return (qlineedit_object*)((char*)(obj) - XtOffsetOf(qlineedit_object, std));
-}
-
-static inline qtextedit_object* qtextedit_fetch_object(zend_object *obj) {
-    return (qtextedit_object*)((char*)(obj) - XtOffsetOf(qtextedit_object, std));
-}
-
-static inline qcheckbox_object* qcheckbox_fetch_object(zend_object *obj) {
-    return (qcheckbox_object*)((char*)(obj) - XtOffsetOf(qcheckbox_object, std));
-}
-
-static inline qradiobutton_object* qradiobutton_fetch_object(zend_object *obj) {
-    return (qradiobutton_object*)((char*)(obj) - XtOffsetOf(qradiobutton_object, std));
-}
-
-static inline qcombobox_object* qcombobox_fetch_object(zend_object *obj) {
-    return (qcombobox_object*)((char*)(obj) - XtOffsetOf(qcombobox_object, std));
-}
-
-static inline qslider_object* qslider_fetch_object(zend_object *obj) {
-    return (qslider_object*)((char*)(obj) - XtOffsetOf(qslider_object, std));
-}
-
-static inline qvboxlayout_object* qvboxlayout_fetch_object(zend_object *obj) {
-    return (qvboxlayout_object*)((char*)(obj) - XtOffsetOf(qvboxlayout_object, std));
-}
-
-static inline qhboxlayout_object* qhboxlayout_fetch_object(zend_object *obj) {
-    return (qhboxlayout_object*)((char*)(obj) - XtOffsetOf(qhboxlayout_object, std));
-}
-
-// Initialization functions
-void qapplication_init(INIT_FUNC_ARGS);
+// Lifecycle helpers
 void qapplication_cleanup(); // Cleanup function
-void qwidget_init(INIT_FUNC_ARGS);
-void qpushbutton_init(INIT_FUNC_ARGS);
-void qlabel_init(INIT_FUNC_ARGS);
-void qmainwindow_init(INIT_FUNC_ARGS);
-void qlineedit_init(INIT_FUNC_ARGS);
-void qtextedit_init(INIT_FUNC_ARGS);
-void qcheckbox_init(INIT_FUNC_ARGS);
-void qradiobutton_init(INIT_FUNC_ARGS);
-void qcombobox_init(INIT_FUNC_ARGS);
-void qslider_init(INIT_FUNC_ARGS);
-void qvboxlayout_init(INIT_FUNC_ARGS);
-void qhboxlayout_init(INIT_FUNC_ARGS);
+
+void qt_register_all_classes();
+void qt_register_QApplication_class();
+void qt_register_QWidget_class();
+void qt_register_QPushButton_class();
+void qt_register_QLabel_class();
+void qt_register_QMainWindow_class();
+void qt_register_QLineEdit_class();
+void qt_register_QSlider_class();
+void qt_register_QVBoxLayout_class();
+void qt_register_QHBoxLayout_class();
+void qt_register_QTabWidget_class();
+void qt_register_QTextEdit_class();
+void qt_register_QComboBox_class();
+void qt_register_QCheckBox_class();
+void qt_register_QRadioButton_class();
+void qt_register_QSpinBox_class();
+void qt_register_QMessageBox_class();
+void qt_register_QDialog_class();
+void qt_register_QFileDialog_class();
+void qt_register_QTableWidget_class();
+void qt_register_QTableWidgetItem_class();
+void qt_register_QSplitter_class();
+void qt_register_QScrollArea_class();
+void qt_register_QProgressBar_class();
+void qt_register_QGridLayout_class();
+void qt_register_QFormLayout_class();
+void qt_register_QListWidget_class();
+void qt_register_QTimer_class();
 
 #endif // PHP_QT6_H

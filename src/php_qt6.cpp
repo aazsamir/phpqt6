@@ -1,36 +1,111 @@
 #include "php_qt6.h"
 
-// Class entries
-zend_class_entry *qapplication_ce;
-zend_class_entry *qwidget_ce;
-zend_class_entry *qpushbutton_ce;
-zend_class_entry *qlabel_ce;
-zend_class_entry *qmainwindow_ce;
-zend_class_entry *qlineedit_ce;
-zend_class_entry *qtextedit_ce;
-zend_class_entry *qcheckbox_ce;
-zend_class_entry *qradiobutton_ce;
-zend_class_entry *qcombobox_ce;
-zend_class_entry *qslider_ce;
-zend_class_entry *qvboxlayout_ce;
-zend_class_entry *qhboxlayout_ce;
+// Class entries (unified architecture)
+zend_class_entry *qt_ce_QApplication = NULL;
+zend_class_entry *qt_ce_QObject = NULL;
+zend_class_entry *qt_ce_QWidget = NULL;
+zend_class_entry *qt_ce_QLayout = NULL;
+zend_class_entry *qt_ce_QPushButton = NULL;
+zend_class_entry *qt_ce_QLabel = NULL;
+zend_class_entry *qt_ce_QMainWindow = NULL;
+zend_class_entry *qt_ce_QLineEdit = NULL;
+zend_class_entry *qt_ce_QSlider = NULL;
+zend_class_entry *qt_ce_QVBoxLayout = NULL;
+zend_class_entry *qt_ce_QHBoxLayout = NULL;
+
+static zend_object_handlers qt_object_handlers;
+
+// Unified object handlers
+zend_object* qt_object_new(zend_class_entry *ce) {
+    qt_object *object = (qt_object*)ecalloc(1, sizeof(qt_object) + zend_object_properties_size(ce));
+    zend_object_std_init(&object->std, ce);
+    object_properties_init(&object->std, ce);
+    object->std.handlers = &qt_object_handlers;
+    object->ptr = nullptr;
+    return &object->std;
+}
+
+void qt_object_free(zend_object *object) {
+    qt_object *qt_obj = (qt_object*)((char*)object - XtOffsetOf(qt_object, std));
+
+    // Ownership-aware cleanup:
+    // - QApplication is managed by qapplication_cleanup().
+    // - QTableWidgetItem may be owned by QTableWidget after setItem().
+    // - QObject-derived wrappers are deleted only when they have no parent.
+    // This avoids both leaks and previous double-free/invalid-cast crashes.
+    if (qt_obj->ptr && !qt_obj->skip_dtor) {
+        zend_class_entry *ce = object->ce;
+
+        if (qt_obj->native_dtor) {
+            qt_obj->native_dtor(qt_obj->ptr);
+        } else if (qt_ce_QApplication && instanceof_function(ce, qt_ce_QApplication)) {
+            // Managed globally in qapplication_cleanup().
+        } else if (qt_ce_QObject && instanceof_function(ce, qt_ce_QObject)) {
+            QObject *qobj = static_cast<QObject*>(qt_obj->ptr);
+            if (qobj->parent() == nullptr) {
+                delete qobj;
+            }
+        }
+    }
+
+    qt_obj->ptr = nullptr;
+    qt_obj->native_dtor = nullptr;
+    qt_obj->skip_dtor = false;
+    
+    zend_object_std_dtor(&qt_obj->std);
+}
+
+void qt_register_all_classes()
+{
+    qt_register_QApplication_class();
+    qt_register_QWidget_class();
+    qt_register_QPushButton_class();
+    qt_register_QLabel_class();
+    qt_register_QMainWindow_class();
+    qt_register_QLineEdit_class();
+    qt_register_QSlider_class();
+    qt_register_QVBoxLayout_class();
+    qt_register_QHBoxLayout_class();
+    qt_register_QTabWidget_class();
+    qt_register_QTextEdit_class();
+    qt_register_QComboBox_class();
+    qt_register_QCheckBox_class();
+    qt_register_QRadioButton_class();
+    qt_register_QSpinBox_class();
+    qt_register_QMessageBox_class();
+    qt_register_QDialog_class();
+    qt_register_QFileDialog_class();
+    qt_register_QTableWidget_class();
+    qt_register_QTableWidgetItem_class();
+    qt_register_QSplitter_class();
+    qt_register_QScrollArea_class();
+    qt_register_QProgressBar_class();
+    qt_register_QGridLayout_class();
+    qt_register_QFormLayout_class();
+    qt_register_QListWidget_class();
+    qt_register_QTimer_class();
+}
 
 // Module functions
 PHP_MINIT_FUNCTION(qt6)
 {
-    qapplication_init(INIT_FUNC_ARGS_PASSTHRU);
-    qwidget_init(INIT_FUNC_ARGS_PASSTHRU);
-    qpushbutton_init(INIT_FUNC_ARGS_PASSTHRU);
-    qlabel_init(INIT_FUNC_ARGS_PASSTHRU);
-    qmainwindow_init(INIT_FUNC_ARGS_PASSTHRU);
-    qlineedit_init(INIT_FUNC_ARGS_PASSTHRU);
-    qtextedit_init(INIT_FUNC_ARGS_PASSTHRU);
-    qcheckbox_init(INIT_FUNC_ARGS_PASSTHRU);
-    qradiobutton_init(INIT_FUNC_ARGS_PASSTHRU);
-    qcombobox_init(INIT_FUNC_ARGS_PASSTHRU);
-    qslider_init(INIT_FUNC_ARGS_PASSTHRU);
-    qvboxlayout_init(INIT_FUNC_ARGS_PASSTHRU);
-    qhboxlayout_init(INIT_FUNC_ARGS_PASSTHRU);
+    memcpy(&qt_object_handlers, &std_object_handlers, sizeof(zend_object_handlers));
+    qt_object_handlers.offset = XtOffsetOf(qt_object, std);
+    qt_object_handlers.free_obj = qt_object_free;
+    
+    // Create QObject base class
+    zend_class_entry ce_qobject;
+    INIT_CLASS_ENTRY(ce_qobject, "Qt\\Object", NULL);
+    qt_ce_QObject = zend_register_internal_class(&ce_qobject);
+    
+    // Create QLayout base class without methods (to avoid signature conflicts)
+    zend_class_entry ce_qlayout;
+    INIT_CLASS_ENTRY(ce_qlayout, "Qt\\Layout", NULL);
+    qt_ce_QLayout = zend_register_internal_class(&ce_qlayout);
+
+    // Register all classes (single unified registration entry-point)
+    qt_register_all_classes();
+    
     return SUCCESS;
 }
 

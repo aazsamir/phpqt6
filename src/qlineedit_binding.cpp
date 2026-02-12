@@ -3,34 +3,6 @@
 // Object handlers
 static zend_object_handlers qlineedit_object_handlers;
 
-// Free object
-static void qlineedit_free_object(zend_object *object)
-{
-    qlineedit_object *intern = qlineedit_fetch_object(object);
-    
-    if (intern->lineedit) {
-        delete intern->lineedit;
-        intern->lineedit = nullptr;
-    }
-    
-    zend_object_std_dtor(&intern->std);
-}
-
-// Create object
-static zend_object* qlineedit_create_object(zend_class_entry *ce)
-{
-    qlineedit_object *intern = (qlineedit_object*)ecalloc(1,
-        sizeof(qlineedit_object) + zend_object_properties_size(ce));
-    
-    zend_object_std_init(&intern->std, ce);
-    object_properties_init(&intern->std, ce);
-    
-    intern->std.handlers = &qlineedit_object_handlers;
-    intern->lineedit = nullptr;
-    
-    return &intern->std;
-}
-
 // Arginfo
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_QLineEdit___construct, 0, 0, 0)
     ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, text, IS_STRING, 0, "\"\"")
@@ -75,21 +47,22 @@ PHP_METHOD(QLineEdit, __construct)
     ZEND_PARSE_PARAMETERS_START(0, 2)
         Z_PARAM_OPTIONAL
         Z_PARAM_STRING(text, text_len)
-        Z_PARAM_OBJECT_OF_CLASS_OR_NULL(parent, qwidget_ce)
+        Z_PARAM_OBJECT_OF_CLASS_OR_NULL(parent, qt_ce_QWidget)
     ZEND_PARSE_PARAMETERS_END();
     
-    qlineedit_object *intern = Z_QLINEEDIT_OBJ_P(ZEND_THIS);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
     
     QWidget *parent_widget = nullptr;
     if (parent) {
-        qwidget_object *parent_obj = Z_QWIDGET_OBJ_P(parent);
-        parent_widget = parent_obj->widget;
+        qt_object *parent_obj = Z_QT_OBJ_P(parent);
+        parent_widget = static_cast<QWidget*>(parent_obj->ptr);
     }
     
-    intern->lineedit = new QLineEdit(parent_widget);
+    QLineEdit *lineedit = new QLineEdit(parent_widget);
     if (text) {
-        intern->lineedit->setText(QString::fromUtf8(text, text_len));
+        lineedit->setText(QString::fromUtf8(text, text_len));
     }
+    intern->ptr = lineedit;
 }
 
 // setText
@@ -102,9 +75,10 @@ PHP_METHOD(QLineEdit, setText)
         Z_PARAM_STRING(text, text_len)
     ZEND_PARSE_PARAMETERS_END();
     
-    qlineedit_object *intern = Z_QLINEEDIT_OBJ_P(ZEND_THIS);
-    if (intern->lineedit) {
-        intern->lineedit->setText(QString::fromUtf8(text, text_len));
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QLineEdit *lineedit = static_cast<QLineEdit*>(intern->ptr);
+    if (lineedit) {
+        lineedit->setText(QString::fromUtf8(text, text_len));
     }
 }
 
@@ -113,9 +87,10 @@ PHP_METHOD(QLineEdit, text)
 {
     ZEND_PARSE_PARAMETERS_NONE();
     
-    qlineedit_object *intern = Z_QLINEEDIT_OBJ_P(ZEND_THIS);
-    if (intern->lineedit) {
-        QString text = intern->lineedit->text();
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QLineEdit *lineedit = static_cast<QLineEdit*>(intern->ptr);
+    if (lineedit) {
+        QString text = lineedit->text();
         RETURN_STRING(text.toUtf8().constData());
     }
     RETURN_EMPTY_STRING();
@@ -131,9 +106,10 @@ PHP_METHOD(QLineEdit, setPlaceholderText)
         Z_PARAM_STRING(text, text_len)
     ZEND_PARSE_PARAMETERS_END();
     
-    qlineedit_object *intern = Z_QLINEEDIT_OBJ_P(ZEND_THIS);
-    if (intern->lineedit) {
-        intern->lineedit->setPlaceholderText(QString::fromUtf8(text, text_len));
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QLineEdit *lineedit = static_cast<QLineEdit*>(intern->ptr);
+    if (lineedit) {
+        lineedit->setPlaceholderText(QString::fromUtf8(text, text_len));
     }
 }
 
@@ -142,9 +118,10 @@ PHP_METHOD(QLineEdit, show)
 {
     ZEND_PARSE_PARAMETERS_NONE();
     
-    qlineedit_object *intern = Z_QLINEEDIT_OBJ_P(ZEND_THIS);
-    if (intern->lineedit) {
-        intern->lineedit->show();
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QLineEdit *lineedit = static_cast<QLineEdit*>(intern->ptr);
+    if (lineedit) {
+        lineedit->show();
     }
 }
 
@@ -153,9 +130,10 @@ PHP_METHOD(QLineEdit, hide)
 {
     ZEND_PARSE_PARAMETERS_NONE();
     
-    qlineedit_object *intern = Z_QLINEEDIT_OBJ_P(ZEND_THIS);
-    if (intern->lineedit) {
-        intern->lineedit->hide();
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QLineEdit *lineedit = static_cast<QLineEdit*>(intern->ptr);
+    if (lineedit) {
+        lineedit->hide();
     }
 }
 
@@ -171,9 +149,10 @@ PHP_METHOD(QLineEdit, setGeometry)
         Z_PARAM_LONG(height)
     ZEND_PARSE_PARAMETERS_END();
     
-    qlineedit_object *intern = Z_QLINEEDIT_OBJ_P(ZEND_THIS);
-    if (intern->lineedit) {
-        intern->lineedit->setGeometry(x, y, width, height);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QLineEdit *lineedit = static_cast<QLineEdit*>(intern->ptr);
+    if (lineedit) {
+        lineedit->setGeometry(x, y, width, height);
     }
 }
 
@@ -187,9 +166,10 @@ PHP_METHOD(QLineEdit, setStyleSheet)
         Z_PARAM_STRING(stylesheet, stylesheet_len)
     ZEND_PARSE_PARAMETERS_END();
     
-    qlineedit_object *intern = Z_QLINEEDIT_OBJ_P(ZEND_THIS);
-    if (intern->lineedit) {
-        intern->lineedit->setStyleSheet(QString::fromUtf8(stylesheet, stylesheet_len));
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QLineEdit *lineedit = static_cast<QLineEdit*>(intern->ptr);
+    if (lineedit) {
+        lineedit->setStyleSheet(QString::fromUtf8(stylesheet, stylesheet_len));
     }
 }
 
@@ -207,14 +187,14 @@ static const zend_function_entry qlineedit_methods[] = {
 };
 
 // Initialize class
-void qlineedit_init(INIT_FUNC_ARGS)
+void qt_register_QLineEdit_class()
 {
     zend_class_entry ce;
     INIT_CLASS_ENTRY(ce, "Qt\\LineEdit", qlineedit_methods);
-    qlineedit_ce = zend_register_internal_class(&ce);
-    qlineedit_ce->create_object = qlineedit_create_object;
+    qt_ce_QLineEdit = zend_register_internal_class(&ce);
+    qt_ce_QLineEdit->create_object = qt_object_new;
     
-    memcpy(&qlineedit_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
-    qlineedit_object_handlers.offset = XtOffsetOf(qlineedit_object, std);
-    qlineedit_object_handlers.free_obj = qlineedit_free_object;
+    memcpy(&qlineedit_object_handlers, &std_object_handlers, sizeof(zend_object_handlers));
+    qlineedit_object_handlers.offset = XtOffsetOf(qt_object, std);
+    qlineedit_object_handlers.free_obj = qt_object_free;
 }

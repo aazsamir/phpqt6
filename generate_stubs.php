@@ -46,7 +46,18 @@ foreach ($classes as $fullClassName) {
     echo "     */\n";
     
     // Class declaration
-    echo "    class {$shortName}\n";
+    $parent = $reflection->getParentClass();
+    $extends = '';
+    if ($parent) {
+        $parentName = $parent->getName();
+        // Remove Qt\ prefix since we're inside namespace Qt {}
+        if (strpos($parentName, 'Qt\\') === 0) {
+            $parentName = substr($parentName, 3);
+        }
+        $extends = " extends {$parentName}";
+    }
+
+    echo "    class {$shortName}{$extends}\n";
     echo "    {\n";
     
     // Methods

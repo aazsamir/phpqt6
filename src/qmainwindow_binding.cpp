@@ -3,34 +3,6 @@
 // Object handlers
 static zend_object_handlers qmainwindow_object_handlers;
 
-// Free object
-static void qmainwindow_free_object(zend_object *object)
-{
-    qmainwindow_object *intern = qmainwindow_fetch_object(object);
-    
-    if (intern->window) {
-        intern->window->deleteLater();
-        intern->window = nullptr;
-    }
-    
-    zend_object_std_dtor(&intern->std);
-}
-
-// Create object
-static zend_object* qmainwindow_create_object(zend_class_entry *ce)
-{
-    qmainwindow_object *intern = (qmainwindow_object*)ecalloc(1,
-        sizeof(qmainwindow_object) + zend_object_properties_size(ce));
-    
-    zend_object_std_init(&intern->std, ce);
-    object_properties_init(&intern->std, ce);
-    
-    intern->std.handlers = &qmainwindow_object_handlers;
-    intern->window = nullptr;
-    
-    return &intern->std;
-}
-
 // Arginfo declarations (PHP 8+)
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_QMainWindow___construct, 0, 0, 0)
     ZEND_ARG_OBJ_INFO_WITH_DEFAULT_VALUE(0, parent, Qt\\Widget, 1, "null")
@@ -68,24 +40,25 @@ PHP_METHOD(QMainWindow, __construct)
     
     ZEND_PARSE_PARAMETERS_START(0, 1)
         Z_PARAM_OPTIONAL
-        Z_PARAM_OBJECT_OF_CLASS_OR_NULL(parent, qwidget_ce)
+        Z_PARAM_OBJECT_OF_CLASS_OR_NULL(parent, qt_ce_QWidget)
     ZEND_PARSE_PARAMETERS_END();
     
-    qmainwindow_object *intern = Z_QMAINWINDOW_OBJ_P(ZEND_THIS);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
     
     QWidget *parent_widget = nullptr;
     if (parent) {
-        qwidget_object *parent_obj = Z_QWIDGET_OBJ_P(parent);
-        parent_widget = parent_obj->widget;
+        qt_object *parent_obj = Z_QT_OBJ_P(parent);
+        parent_widget = static_cast<QWidget*>(parent_obj->ptr);
     }
     
-    intern->window = new QMainWindow(parent_widget);
+    QMainWindow *window = new QMainWindow(parent_widget);
+    intern->ptr = window;
     
     // Force window to have native decorations with explicit window flags
-    intern->window->setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | 
-                                   Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint | 
-                                   Qt::WindowCloseButtonHint);
-    intern->window->setAttribute(Qt::WA_NativeWindow, true);
+    window->setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | 
+                           Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint | 
+                           Qt::WindowCloseButtonHint);
+    window->setAttribute(Qt::WA_NativeWindow, true);
 }
 
 // show() : void
@@ -93,9 +66,10 @@ PHP_METHOD(QMainWindow, show)
 {
     ZEND_PARSE_PARAMETERS_NONE();
     
-    qmainwindow_object *intern = Z_QMAINWINDOW_OBJ_P(ZEND_THIS);
-    if (intern->window) {
-        intern->window->show();
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QMainWindow *window = static_cast<QMainWindow*>(intern->ptr);
+    if (window) {
+        window->show();
     }
 }
 
@@ -109,9 +83,10 @@ PHP_METHOD(QMainWindow, setWindowTitle)
         Z_PARAM_STRING(title, title_len)
     ZEND_PARSE_PARAMETERS_END();
     
-    qmainwindow_object *intern = Z_QMAINWINDOW_OBJ_P(ZEND_THIS);
-    if (intern->window) {
-        intern->window->setWindowTitle(QString::fromUtf8(title, title_len));
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QMainWindow *window = static_cast<QMainWindow*>(intern->ptr);
+    if (window) {
+        window->setWindowTitle(QString::fromUtf8(title, title_len));
     }
 }
 
@@ -125,26 +100,29 @@ PHP_METHOD(QMainWindow, resize)
         Z_PARAM_LONG(height)
     ZEND_PARSE_PARAMETERS_END();
     
-    qmainwindow_object *intern = Z_QMAINWINDOW_OBJ_P(ZEND_THIS);
-    if (intern->window) {
-        intern->window->resize(width, height);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QMainWindow *window = static_cast<QMainWindow*>(intern->ptr);
+    if (window) {
+        window->resize(width, height);
     }
 }
 
-// setCentralWidget(QWidget $widget) : void
+// setCentralWidget(Widget $widget) : void
 PHP_METHOD(QMainWindow, setCentralWidget)
 {
     zval *widget;
     
     ZEND_PARSE_PARAMETERS_START(1, 1)
-        Z_PARAM_OBJECT_OF_CLASS(widget, qwidget_ce)
+        Z_PARAM_OBJECT_OF_CLASS(widget, qt_ce_QWidget)
     ZEND_PARSE_PARAMETERS_END();
     
-    qmainwindow_object *intern = Z_QMAINWINDOW_OBJ_P(ZEND_THIS);
-    qwidget_object *widget_obj = Z_QWIDGET_OBJ_P(widget);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    qt_object *widget_obj = Z_QT_OBJ_P(widget);
+    QMainWindow *window = static_cast<QMainWindow*>(intern->ptr);
+    QWidget *central = static_cast<QWidget*>(widget_obj->ptr);
     
-    if (intern->window && widget_obj->widget) {
-        intern->window->setCentralWidget(widget_obj->widget);
+    if (window && central) {
+        window->setCentralWidget(central);
     }
 }
 
@@ -158,9 +136,10 @@ PHP_METHOD(QMainWindow, setStyleSheet)
         Z_PARAM_STRING(stylesheet, stylesheet_len)
     ZEND_PARSE_PARAMETERS_END();
     
-    qmainwindow_object *intern = Z_QMAINWINDOW_OBJ_P(ZEND_THIS);
-    if (intern->window) {
-        intern->window->setStyleSheet(QString::fromUtf8(stylesheet, stylesheet_len));
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QMainWindow *window = static_cast<QMainWindow*>(intern->ptr);
+    if (window) {
+        window->setStyleSheet(QString::fromUtf8(stylesheet, stylesheet_len));
     }
 }
 
@@ -175,9 +154,10 @@ PHP_METHOD(QMainWindow, setAttribute)
         Z_PARAM_BOOL(on)
     ZEND_PARSE_PARAMETERS_END();
     
-    qmainwindow_object *intern = Z_QMAINWINDOW_OBJ_P(ZEND_THIS);
-    if (intern->window) {
-        intern->window->setAttribute(static_cast<Qt::WidgetAttribute>(attribute), on);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QMainWindow *window = static_cast<QMainWindow*>(intern->ptr);
+    if (window) {
+        window->setAttribute(static_cast<Qt::WidgetAttribute>(attribute), on);
     }
 }
 
@@ -194,14 +174,14 @@ static const zend_function_entry qmainwindow_methods[] = {
 };
 
 // Initialize class
-void qmainwindow_init(INIT_FUNC_ARGS)
+void qt_register_QMainWindow_class()
 {
     zend_class_entry ce;
     INIT_CLASS_ENTRY(ce, "Qt\\MainWindow", qmainwindow_methods);
-    qmainwindow_ce = zend_register_internal_class(&ce);
-    qmainwindow_ce->create_object = qmainwindow_create_object;
+    qt_ce_QMainWindow = zend_register_internal_class_ex(&ce, qt_ce_QWidget);
+    qt_ce_QMainWindow->create_object = qt_object_new;
     
-    memcpy(&qmainwindow_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
-    qmainwindow_object_handlers.offset = XtOffsetOf(qmainwindow_object, std);
-    qmainwindow_object_handlers.free_obj = qmainwindow_free_object;
+    memcpy(&qmainwindow_object_handlers, &std_object_handlers, sizeof(zend_object_handlers));
+    qmainwindow_object_handlers.offset = XtOffsetOf(qt_object, std);
+    qmainwindow_object_handlers.free_obj = qt_object_free;
 }

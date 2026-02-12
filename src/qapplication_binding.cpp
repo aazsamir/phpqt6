@@ -9,32 +9,6 @@ static bool qapp_cleaned_up = false;
 // Object handlers
 static zend_object_handlers qapplication_object_handlers;
 
-// Free object
-static void qapplication_free_object(zend_object *object)
-{
-    qapplication_object *intern = qapplication_fetch_object(object);
-    
-    // Don't delete QApplication here - Qt will handle it
-    intern->app = nullptr;
-    
-    zend_object_std_dtor(&intern->std);
-}
-
-// Create object
-static zend_object* qapplication_create_object(zend_class_entry *ce)
-{
-    qapplication_object *intern = (qapplication_object*)ecalloc(1,
-        sizeof(qapplication_object) + zend_object_properties_size(ce));
-    
-    zend_object_std_init(&intern->std, ce);
-    object_properties_init(&intern->std, ce);
-    
-    intern->std.handlers = &qapplication_object_handlers;
-    intern->app = nullptr;
-    
-    return &intern->std;
-}
-
 // Arginfo declarations (PHP 8+)
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_QApplication___construct, 0, 0, 0)
     ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, argv, IS_ARRAY, 1, "[]")
@@ -56,11 +30,11 @@ PHP_METHOD(QApplication, __construct)
         Z_PARAM_ARRAY(argv_array)
     ZEND_PARSE_PARAMETERS_END();
     
-    qapplication_object *intern = Z_QAPPLICATION_OBJ_P(ZEND_THIS);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
     
     // Only one QApplication allowed
     if (qapp_instance != nullptr) {
-        intern->app = qapp_instance;
+        intern->ptr = qapp_instance;
         return;
     }
     
@@ -85,7 +59,7 @@ PHP_METHOD(QApplication, __construct)
     }
     
     qapp_instance = new QApplication(qapp_argc, qapp_argv);
-    intern->app = qapp_instance;
+    intern->ptr = qapp_instance;
 }
 
 // exec() : int
@@ -93,14 +67,15 @@ PHP_METHOD(QApplication, exec)
 {
     ZEND_PARSE_PARAMETERS_NONE();
     
-    qapplication_object *intern = Z_QAPPLICATION_OBJ_P(ZEND_THIS);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QApplication *app = static_cast<QApplication*>(intern->ptr);
     
-    if (!intern->app) {
+    if (!app) {
         php_error_docref(NULL, E_WARNING, "QApplication not initialized");
         RETURN_LONG(-1);
     }
     
-    int result = intern->app->exec();
+    int result = app->exec();
     RETURN_LONG(result);
 }
 
@@ -152,14 +127,14 @@ static const zend_function_entry qapplication_methods[] = {
 };
 
 // Initialize class
-void qapplication_init(INIT_FUNC_ARGS)
+void qt_register_QApplication_class()
 {
     zend_class_entry ce;
     INIT_CLASS_ENTRY(ce, "Qt\\Application", qapplication_methods);
-    qapplication_ce = zend_register_internal_class(&ce);
-    qapplication_ce->create_object = qapplication_create_object;
+    qt_ce_QApplication = zend_register_internal_class(&ce);
+    qt_ce_QApplication->create_object = qt_object_new;
     
-    memcpy(&qapplication_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
-    qapplication_object_handlers.offset = XtOffsetOf(qapplication_object, std);
-    qapplication_object_handlers.free_obj = qapplication_free_object;
+    memcpy(&qapplication_object_handlers, &std_object_handlers, sizeof(zend_object_handlers));
+    qapplication_object_handlers.offset = XtOffsetOf(qt_object, std);
+    qapplication_object_handlers.free_obj = qt_object_free;
 }

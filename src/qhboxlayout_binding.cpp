@@ -4,32 +4,6 @@
 // Object handlers
 static zend_object_handlers qhboxlayout_object_handlers;
 
-// Free object
-static void qhboxlayout_free_object(zend_object *object)
-{
-    qhboxlayout_object *intern = qhboxlayout_fetch_object(object);
-    
-    // Qt manages layout lifetime through parent widget
-    intern->layout = nullptr;
-    
-    zend_object_std_dtor(&intern->std);
-}
-
-// Create object
-static zend_object* qhboxlayout_create_object(zend_class_entry *ce)
-{
-    qhboxlayout_object *intern = (qhboxlayout_object*)ecalloc(1,
-        sizeof(qhboxlayout_object) + zend_object_properties_size(ce));
-    
-    zend_object_std_init(&intern->std, ce);
-    object_properties_init(&intern->std, ce);
-    
-    intern->std.handlers = &qhboxlayout_object_handlers;
-    intern->layout = nullptr;
-    
-    return &intern->std;
-}
-
 // Arginfo
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_QHBoxLayout___construct, 0, 0, 0)
 ZEND_END_ARG_INFO()
@@ -63,8 +37,8 @@ PHP_METHOD(QHBoxLayout, __construct)
 {
     ZEND_PARSE_PARAMETERS_NONE();
     
-    qhboxlayout_object *intern = Z_QHBOXLAYOUT_OBJ_P(ZEND_THIS);
-    intern->layout = new QHBoxLayout();
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    intern->ptr = new QHBoxLayout();
 }
 
 // addWidget(Widget $widget, int $stretch = 0)
@@ -79,31 +53,18 @@ PHP_METHOD(QHBoxLayout, addWidget)
         Z_PARAM_LONG(stretch)
     ZEND_PARSE_PARAMETERS_END();
     
-    qhboxlayout_object *intern = Z_QHBOXLAYOUT_OBJ_P(ZEND_THIS);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QHBoxLayout *layout = static_cast<QHBoxLayout*>(intern->ptr);
     
-    if (!intern->layout) {
+    if (!layout) {
         return;
     }
     
-    // Check for different widget types
-    QWidget *qwidget = nullptr;
-    
-    if (instanceof_function(Z_OBJCE_P(widget_zval), qwidget_ce)) {
-        qwidget_object *widget_obj = Z_QWIDGET_OBJ_P(widget_zval);
-        qwidget = widget_obj->widget;
-    } else if (instanceof_function(Z_OBJCE_P(widget_zval), qlabel_ce)) {
-        qlabel_object *label_obj = Z_QLABEL_OBJ_P(widget_zval);
-        qwidget = label_obj->label;
-    } else if (instanceof_function(Z_OBJCE_P(widget_zval), qpushbutton_ce)) {
-        qpushbutton_object *btn_obj = Z_QPUSHBUTTON_OBJ_P(widget_zval);
-        qwidget = btn_obj->button;
-    } else if (instanceof_function(Z_OBJCE_P(widget_zval), qlineedit_ce)) {
-        qlineedit_object *edit_obj = Z_QLINEEDIT_OBJ_P(widget_zval);
-        qwidget = edit_obj->lineedit;
-    }
+    qt_object *widget_obj = Z_QT_OBJ_P(widget_zval);
+    QWidget *qwidget = static_cast<QWidget*>(widget_obj->ptr);
     
     if (qwidget) {
-        intern->layout->addWidget(qwidget, stretch);
+        layout->addWidget(qwidget, stretch);
     }
 }
 
@@ -117,10 +78,11 @@ PHP_METHOD(QHBoxLayout, addStretch)
         Z_PARAM_LONG(stretch)
     ZEND_PARSE_PARAMETERS_END();
     
-    qhboxlayout_object *intern = Z_QHBOXLAYOUT_OBJ_P(ZEND_THIS);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QHBoxLayout *layout = static_cast<QHBoxLayout*>(intern->ptr);
     
-    if (intern->layout) {
-        intern->layout->addStretch(stretch);
+    if (layout) {
+        layout->addStretch(stretch);
     }
 }
 
@@ -133,10 +95,11 @@ PHP_METHOD(QHBoxLayout, addSpacing)
         Z_PARAM_LONG(size)
     ZEND_PARSE_PARAMETERS_END();
     
-    qhboxlayout_object *intern = Z_QHBOXLAYOUT_OBJ_P(ZEND_THIS);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QHBoxLayout *layout = static_cast<QHBoxLayout*>(intern->ptr);
     
-    if (intern->layout) {
-        intern->layout->addSpacing(size);
+    if (layout) {
+        layout->addSpacing(size);
     }
 }
 
@@ -149,10 +112,11 @@ PHP_METHOD(QHBoxLayout, setSpacing)
         Z_PARAM_LONG(spacing)
     ZEND_PARSE_PARAMETERS_END();
     
-    qhboxlayout_object *intern = Z_QHBOXLAYOUT_OBJ_P(ZEND_THIS);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QHBoxLayout *layout = static_cast<QHBoxLayout*>(intern->ptr);
     
-    if (intern->layout) {
-        intern->layout->setSpacing(spacing);
+    if (layout) {
+        layout->setSpacing(spacing);
     }
 }
 
@@ -168,10 +132,11 @@ PHP_METHOD(QHBoxLayout, setContentsMargins)
         Z_PARAM_LONG(bottom)
     ZEND_PARSE_PARAMETERS_END();
     
-    qhboxlayout_object *intern = Z_QHBOXLAYOUT_OBJ_P(ZEND_THIS);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QHBoxLayout *layout = static_cast<QHBoxLayout*>(intern->ptr);
     
-    if (intern->layout) {
-        intern->layout->setContentsMargins(left, top, right, bottom);
+    if (layout) {
+        layout->setContentsMargins(left, top, right, bottom);
     }
 }
 
@@ -187,14 +152,14 @@ static const zend_function_entry qhboxlayout_methods[] = {
 };
 
 // Initialize class
-void qhboxlayout_init(INIT_FUNC_ARGS)
+void qt_register_QHBoxLayout_class()
 {
     zend_class_entry ce;
     INIT_CLASS_ENTRY(ce, "Qt\\HBoxLayout", qhboxlayout_methods);
-    qhboxlayout_ce = zend_register_internal_class(&ce);
-    qhboxlayout_ce->create_object = qhboxlayout_create_object;
+    qt_ce_QHBoxLayout = zend_register_internal_class_ex(&ce, qt_ce_QLayout);
+    qt_ce_QHBoxLayout->create_object = qt_object_new;
     
-    memcpy(&qhboxlayout_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
-    qhboxlayout_object_handlers.offset = XtOffsetOf(qhboxlayout_object, std);
-    qhboxlayout_object_handlers.free_obj = qhboxlayout_free_object;
+    memcpy(&qhboxlayout_object_handlers, &std_object_handlers, sizeof(zend_object_handlers));
+    qhboxlayout_object_handlers.offset = XtOffsetOf(qt_object, std);
+    qhboxlayout_object_handlers.free_obj = qt_object_free;
 }

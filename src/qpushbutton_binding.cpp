@@ -31,34 +31,6 @@ public slots:
     }
 };
 
-// Free object
-static void qpushbutton_free_object(zend_object *object)
-{
-    qpushbutton_object *intern = qpushbutton_fetch_object(object);
-    
-    if (intern->button) {
-        intern->button->deleteLater();
-        intern->button = nullptr;
-    }
-    
-    zend_object_std_dtor(&intern->std);
-}
-
-// Create object
-static zend_object* qpushbutton_create_object(zend_class_entry *ce)
-{
-    qpushbutton_object *intern = (qpushbutton_object*)ecalloc(1,
-        sizeof(qpushbutton_object) + zend_object_properties_size(ce));
-    
-    zend_object_std_init(&intern->std, ce);
-    object_properties_init(&intern->std, ce);
-    
-    intern->std.handlers = &qpushbutton_object_handlers;
-    intern->button = nullptr;
-    
-    return &intern->std;
-}
-
 // Arginfo declarations (PHP 8+)
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_QPushButton___construct, 0, 0, 0)
     ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, text, IS_STRING, 0, "\"\"")
@@ -100,21 +72,21 @@ PHP_METHOD(QPushButton, __construct)
     ZEND_PARSE_PARAMETERS_START(0, 2)
         Z_PARAM_OPTIONAL
         Z_PARAM_STRING(text, text_len)
-        Z_PARAM_OBJECT_OF_CLASS_OR_NULL(parent, qwidget_ce)
+        Z_PARAM_OBJECT_OF_CLASS_OR_NULL(parent, qt_ce_QWidget)
     ZEND_PARSE_PARAMETERS_END();
     
-    qpushbutton_object *intern = Z_QPUSHBUTTON_OBJ_P(ZEND_THIS);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
     
     QWidget *parent_widget = nullptr;
     if (parent) {
-        qwidget_object *parent_obj = Z_QWIDGET_OBJ_P(parent);
-        parent_widget = parent_obj->widget;
+        qt_object *parent_obj = Z_QT_OBJ_P(parent);
+        parent_widget = static_cast<QWidget*>(parent_obj->ptr);
     }
     
     if (text) {
-        intern->button = new QPushButton(QString::fromUtf8(text, text_len), parent_widget);
+        intern->ptr = new QPushButton(QString::fromUtf8(text, text_len), parent_widget);
     } else {
-        intern->button = new QPushButton(parent_widget);
+        intern->ptr = new QPushButton(parent_widget);
     }
 }
 
@@ -128,9 +100,10 @@ PHP_METHOD(QPushButton, setText)
         Z_PARAM_STRING(text, text_len)
     ZEND_PARSE_PARAMETERS_END();
     
-    qpushbutton_object *intern = Z_QPUSHBUTTON_OBJ_P(ZEND_THIS);
-    if (intern->button) {
-        intern->button->setText(QString::fromUtf8(text, text_len));
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QPushButton *button = static_cast<QPushButton*>(intern->ptr);
+    if (button) {
+        button->setText(QString::fromUtf8(text, text_len));
     }
 }
 
@@ -139,9 +112,10 @@ PHP_METHOD(QPushButton, show)
 {
     ZEND_PARSE_PARAMETERS_NONE();
     
-    qpushbutton_object *intern = Z_QPUSHBUTTON_OBJ_P(ZEND_THIS);
-    if (intern->button) {
-        intern->button->show();
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QPushButton *button = static_cast<QPushButton*>(intern->ptr);
+    if (button) {
+        button->show();
     }
 }
 
@@ -150,9 +124,10 @@ PHP_METHOD(QPushButton, hide)
 {
     ZEND_PARSE_PARAMETERS_NONE();
     
-    qpushbutton_object *intern = Z_QPUSHBUTTON_OBJ_P(ZEND_THIS);
-    if (intern->button) {
-        intern->button->hide();
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QPushButton *button = static_cast<QPushButton*>(intern->ptr);
+    if (button) {
+        button->hide();
     }
 }
 
@@ -168,9 +143,10 @@ PHP_METHOD(QPushButton, setGeometry)
         Z_PARAM_LONG(height)
     ZEND_PARSE_PARAMETERS_END();
     
-    qpushbutton_object *intern = Z_QPUSHBUTTON_OBJ_P(ZEND_THIS);
-    if (intern->button) {
-        intern->button->setGeometry(x, y, width, height);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QPushButton *button = static_cast<QPushButton*>(intern->ptr);
+    if (button) {
+        button->setGeometry(x, y, width, height);
     }
 }
 
@@ -183,15 +159,16 @@ PHP_METHOD(QPushButton, onClick)
         Z_PARAM_ZVAL(callback)
     ZEND_PARSE_PARAMETERS_END();
     
-    qpushbutton_object *intern = Z_QPUSHBUTTON_OBJ_P(ZEND_THIS);
-    if (!intern->button) {
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QPushButton *button = static_cast<QPushButton*>(intern->ptr);
+    if (!button) {
         return;
     }
     
     PHPButtonCallback *cb = new PHPButtonCallback();
     ZVAL_COPY(&cb->callback, callback);
     
-    QObject::connect(intern->button, &QPushButton::clicked, cb, &PHPButtonCallback::onClicked);
+    QObject::connect(button, &QPushButton::clicked, cb, &PHPButtonCallback::onClicked);
 }
 
 // setStyleSheet(string $styleSheet) : void
@@ -204,9 +181,10 @@ PHP_METHOD(QPushButton, setStyleSheet)
         Z_PARAM_STRING(stylesheet, stylesheet_len)
     ZEND_PARSE_PARAMETERS_END();
     
-    qpushbutton_object *intern = Z_QPUSHBUTTON_OBJ_P(ZEND_THIS);
-    if (intern->button) {
-        intern->button->setStyleSheet(QString::fromUtf8(stylesheet, stylesheet_len));
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QPushButton *button = static_cast<QPushButton*>(intern->ptr);
+    if (button) {
+        button->setStyleSheet(QString::fromUtf8(stylesheet, stylesheet_len));
     }
 }
 
@@ -223,16 +201,16 @@ static const zend_function_entry qpushbutton_methods[] = {
 };
 
 // Initialize class
-void qpushbutton_init(INIT_FUNC_ARGS)
+void qt_register_QPushButton_class()
 {
     zend_class_entry ce;
     INIT_CLASS_ENTRY(ce, "Qt\\PushButton", qpushbutton_methods);
-    qpushbutton_ce = zend_register_internal_class(&ce);
-    qpushbutton_ce->create_object = qpushbutton_create_object;
+    qt_ce_QPushButton = zend_register_internal_class(&ce);
+    qt_ce_QPushButton->create_object = qt_object_new;
     
-    memcpy(&qpushbutton_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
-    qpushbutton_object_handlers.offset = XtOffsetOf(qpushbutton_object, std);
-    qpushbutton_object_handlers.free_obj = qpushbutton_free_object;
+    memcpy(&qpushbutton_object_handlers, &std_object_handlers, sizeof(zend_object_handlers));
+    qpushbutton_object_handlers.offset = XtOffsetOf(qt_object, std);
+    qpushbutton_object_handlers.free_obj = qt_object_free;
 }
 
 #include "qpushbutton_binding.moc"

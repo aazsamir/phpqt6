@@ -40,34 +40,6 @@ private:
     zval *php_callback = nullptr;
 };
 
-// Free object
-static void qslider_free_object(zend_object *object)
-{
-    qslider_object *intern = qslider_fetch_object(object);
-    
-    if (intern->slider) {
-        delete intern->slider;
-        intern->slider = nullptr;
-    }
-    
-    zend_object_std_dtor(&intern->std);
-}
-
-// Create object
-static zend_object* qslider_create_object(zend_class_entry *ce)
-{
-    qslider_object *intern = (qslider_object*)ecalloc(1,
-        sizeof(qslider_object) + zend_object_properties_size(ce));
-    
-    zend_object_std_init(&intern->std, ce);
-    object_properties_init(&intern->std, ce);
-    
-    intern->std.handlers = &qslider_object_handlers;
-    intern->slider = nullptr;
-    
-    return &intern->std;
-}
-
 // Arginfo
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_QSlider___construct, 0, 0, 0)
     ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, orientation, IS_LONG, 0, "1")
@@ -116,18 +88,18 @@ PHP_METHOD(QSlider, __construct)
     ZEND_PARSE_PARAMETERS_START(0, 2)
         Z_PARAM_OPTIONAL
         Z_PARAM_LONG(orientation)
-        Z_PARAM_OBJECT_OF_CLASS_OR_NULL(parent, qwidget_ce)
+        Z_PARAM_OBJECT_OF_CLASS_OR_NULL(parent, qt_ce_QWidget)
     ZEND_PARSE_PARAMETERS_END();
     
-    qslider_object *intern = Z_QSLIDER_OBJ_P(ZEND_THIS);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
     
     QWidget *parent_widget = nullptr;
     if (parent) {
-        qwidget_object *parent_obj = Z_QWIDGET_OBJ_P(parent);
-        parent_widget = parent_obj->widget;
+        qt_object *parent_obj = Z_QT_OBJ_P(parent);
+        parent_widget = static_cast<QWidget*>(parent_obj->ptr);
     }
     
-    intern->slider = new QSlider((Qt::Orientation)orientation, parent_widget);
+    intern->ptr = new QSlider((Qt::Orientation)orientation, parent_widget);
 }
 
 // setValue
@@ -139,9 +111,10 @@ PHP_METHOD(QSlider, setValue)
         Z_PARAM_LONG(value)
     ZEND_PARSE_PARAMETERS_END();
     
-    qslider_object *intern = Z_QSLIDER_OBJ_P(ZEND_THIS);
-    if (intern->slider) {
-        intern->slider->setValue(value);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QSlider *slider = static_cast<QSlider*>(intern->ptr);
+    if (slider) {
+        slider->setValue(value);
     }
 }
 
@@ -150,9 +123,10 @@ PHP_METHOD(QSlider, value)
 {
     ZEND_PARSE_PARAMETERS_NONE();
     
-    qslider_object *intern = Z_QSLIDER_OBJ_P(ZEND_THIS);
-    if (intern->slider) {
-        RETURN_LONG(intern->slider->value());
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QSlider *slider = static_cast<QSlider*>(intern->ptr);
+    if (slider) {
+        RETURN_LONG(slider->value());
     }
     RETURN_LONG(0);
 }
@@ -167,9 +141,10 @@ PHP_METHOD(QSlider, setRange)
         Z_PARAM_LONG(max)
     ZEND_PARSE_PARAMETERS_END();
     
-    qslider_object *intern = Z_QSLIDER_OBJ_P(ZEND_THIS);
-    if (intern->slider) {
-        intern->slider->setRange(min, max);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QSlider *slider = static_cast<QSlider*>(intern->ptr);
+    if (slider) {
+        slider->setRange(min, max);
     }
 }
 
@@ -182,9 +157,10 @@ PHP_METHOD(QSlider, onValueChanged)
         Z_PARAM_ZVAL(callback)
     ZEND_PARSE_PARAMETERS_END();
     
-    qslider_object *intern = Z_QSLIDER_OBJ_P(ZEND_THIS);
-    if (intern->slider) {
-        PHPSliderCallback *cb = new PHPSliderCallback(intern->slider);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QSlider *slider = static_cast<QSlider*>(intern->ptr);
+    if (slider) {
+        PHPSliderCallback *cb = new PHPSliderCallback(slider);
         cb->setCallback(callback);
     }
 }
@@ -194,9 +170,10 @@ PHP_METHOD(QSlider, show)
 {
     ZEND_PARSE_PARAMETERS_NONE();
     
-    qslider_object *intern = Z_QSLIDER_OBJ_P(ZEND_THIS);
-    if (intern->slider) {
-        intern->slider->show();
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QSlider *slider = static_cast<QSlider*>(intern->ptr);
+    if (slider) {
+        slider->show();
     }
 }
 
@@ -205,9 +182,10 @@ PHP_METHOD(QSlider, hide)
 {
     ZEND_PARSE_PARAMETERS_NONE();
     
-    qslider_object *intern = Z_QSLIDER_OBJ_P(ZEND_THIS);
-    if (intern->slider) {
-        intern->slider->hide();
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QSlider *slider = static_cast<QSlider*>(intern->ptr);
+    if (slider) {
+        slider->hide();
     }
 }
 
@@ -223,9 +201,10 @@ PHP_METHOD(QSlider, setGeometry)
         Z_PARAM_LONG(height)
     ZEND_PARSE_PARAMETERS_END();
     
-    qslider_object *intern = Z_QSLIDER_OBJ_P(ZEND_THIS);
-    if (intern->slider) {
-        intern->slider->setGeometry(x, y, width, height);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QSlider *slider = static_cast<QSlider*>(intern->ptr);
+    if (slider) {
+        slider->setGeometry(x, y, width, height);
     }
 }
 
@@ -239,9 +218,10 @@ PHP_METHOD(QSlider, setStyleSheet)
         Z_PARAM_STRING(stylesheet, stylesheet_len)
     ZEND_PARSE_PARAMETERS_END();
     
-    qslider_object *intern = Z_QSLIDER_OBJ_P(ZEND_THIS);
-    if (intern->slider) {
-        intern->slider->setStyleSheet(QString::fromUtf8(stylesheet, stylesheet_len));
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QSlider *slider = static_cast<QSlider*>(intern->ptr);
+    if (slider) {
+        slider->setStyleSheet(QString::fromUtf8(stylesheet, stylesheet_len));
     }
 }
 
@@ -260,16 +240,16 @@ static const zend_function_entry qslider_methods[] = {
 };
 
 // Initialize class
-void qslider_init(INIT_FUNC_ARGS)
+void qt_register_QSlider_class()
 {
     zend_class_entry ce;
     INIT_CLASS_ENTRY(ce, "Qt\\Slider", qslider_methods);
-    qslider_ce = zend_register_internal_class(&ce);
-    qslider_ce->create_object = qslider_create_object;
+    qt_ce_QSlider = zend_register_internal_class(&ce);
+    qt_ce_QSlider->create_object = qt_object_new;
     
-    memcpy(&qslider_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
-    qslider_object_handlers.offset = XtOffsetOf(qslider_object, std);
-    qslider_object_handlers.free_obj = qslider_free_object;
+    memcpy(&qslider_object_handlers, &std_object_handlers, sizeof(zend_object_handlers));
+    qslider_object_handlers.offset = XtOffsetOf(qt_object, std);
+    qslider_object_handlers.free_obj = qt_object_free;
 }
 
 #include "qslider_binding.moc"

@@ -13,7 +13,6 @@ Qt6 bindings for PHP 8+. Build native desktop GUI applications using PHP with th
 - **Event Handling** - onClick, onValueChanged callbacks with PHP closures
 - **Type Safety** - Full PHP 8+ type hints
 - **Styling** - Qt StyleSheet support for custom appearance
-- **Safe Wrapper API** - Automatic reference management prevents garbage collection issues
 - **IDE Support** - Auto-generated stubs for full autocomplete and type checking
 
 ## Requirements
@@ -67,12 +66,6 @@ extension=phpqt6.so
 
 ```bash
 php generate_stubs.php > qt6.stub.php
-```
-
-### 5. Add wrapper library to your project
-
-```bash
-composer require aazsamir/phpqt6lib:dev-main
 ```
 
 ## License

@@ -3,34 +3,6 @@
 // Object handlers
 static zend_object_handlers qlabel_object_handlers;
 
-// Free object
-static void qlabel_free_object(zend_object *object)
-{
-    qlabel_object *intern = qlabel_fetch_object(object);
-    
-    if (intern->label) {
-        intern->label->deleteLater();
-        intern->label = nullptr;
-    }
-    
-    zend_object_std_dtor(&intern->std);
-}
-
-// Create object
-static zend_object* qlabel_create_object(zend_class_entry *ce)
-{
-    qlabel_object *intern = (qlabel_object*)ecalloc(1,
-        sizeof(qlabel_object) + zend_object_properties_size(ce));
-    
-    zend_object_std_init(&intern->std, ce);
-    object_properties_init(&intern->std, ce);
-    
-    intern->std.handlers = &qlabel_object_handlers;
-    intern->label = nullptr;
-    
-    return &intern->std;
-}
-
 // Arginfo declarations (PHP 8+)
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_QLabel___construct, 0, 0, 0)
     ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, text, IS_STRING, 0, "\"\"")
@@ -68,21 +40,21 @@ PHP_METHOD(QLabel, __construct)
     ZEND_PARSE_PARAMETERS_START(0, 2)
         Z_PARAM_OPTIONAL
         Z_PARAM_STRING(text, text_len)
-        Z_PARAM_OBJECT_OF_CLASS_OR_NULL(parent, qwidget_ce)
+        Z_PARAM_OBJECT_OF_CLASS_OR_NULL(parent, qt_ce_QWidget)
     ZEND_PARSE_PARAMETERS_END();
     
-    qlabel_object *intern = Z_QLABEL_OBJ_P(ZEND_THIS);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
     
     QWidget *parent_widget = nullptr;
     if (parent) {
-        qwidget_object *parent_obj = Z_QWIDGET_OBJ_P(parent);
-        parent_widget = parent_obj->widget;
+        qt_object *parent_obj = Z_QT_OBJ_P(parent);
+        parent_widget = static_cast<QWidget*>(parent_obj->ptr);
     }
     
     if (text) {
-        intern->label = new QLabel(QString::fromUtf8(text, text_len), parent_widget);
+        intern->ptr = new QLabel(QString::fromUtf8(text, text_len), parent_widget);
     } else {
-        intern->label = new QLabel(parent_widget);
+        intern->ptr = new QLabel(parent_widget);
     }
 }
 
@@ -96,9 +68,10 @@ PHP_METHOD(QLabel, setText)
         Z_PARAM_STRING(text, text_len)
     ZEND_PARSE_PARAMETERS_END();
     
-    qlabel_object *intern = Z_QLABEL_OBJ_P(ZEND_THIS);
-    if (intern->label) {
-        intern->label->setText(QString::fromUtf8(text, text_len));
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QLabel *label = static_cast<QLabel*>(intern->ptr);
+    if (label) {
+        label->setText(QString::fromUtf8(text, text_len));
     }
 }
 
@@ -107,9 +80,10 @@ PHP_METHOD(QLabel, show)
 {
     ZEND_PARSE_PARAMETERS_NONE();
     
-    qlabel_object *intern = Z_QLABEL_OBJ_P(ZEND_THIS);
-    if (intern->label) {
-        intern->label->show();
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QLabel *label = static_cast<QLabel*>(intern->ptr);
+    if (label) {
+        label->show();
     }
 }
 
@@ -118,9 +92,10 @@ PHP_METHOD(QLabel, hide)
 {
     ZEND_PARSE_PARAMETERS_NONE();
     
-    qlabel_object *intern = Z_QLABEL_OBJ_P(ZEND_THIS);
-    if (intern->label) {
-        intern->label->hide();
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QLabel *label = static_cast<QLabel*>(intern->ptr);
+    if (label) {
+        label->hide();
     }
 }
 
@@ -136,9 +111,10 @@ PHP_METHOD(QLabel, setGeometry)
         Z_PARAM_LONG(height)
     ZEND_PARSE_PARAMETERS_END();
     
-    qlabel_object *intern = Z_QLABEL_OBJ_P(ZEND_THIS);
-    if (intern->label) {
-        intern->label->setGeometry(x, y, width, height);
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QLabel *label = static_cast<QLabel*>(intern->ptr);
+    if (label) {
+        label->setGeometry(x, y, width, height);
     }
 }
 
@@ -152,9 +128,10 @@ PHP_METHOD(QLabel, setStyleSheet)
         Z_PARAM_STRING(stylesheet, stylesheet_len)
     ZEND_PARSE_PARAMETERS_END();
     
-    qlabel_object *intern = Z_QLABEL_OBJ_P(ZEND_THIS);
-    if (intern->label) {
-        intern->label->setStyleSheet(QString::fromUtf8(stylesheet, stylesheet_len));
+    qt_object *intern = Z_QT_OBJ_P(ZEND_THIS);
+    QLabel *label = static_cast<QLabel*>(intern->ptr);
+    if (label) {
+        label->setStyleSheet(QString::fromUtf8(stylesheet, stylesheet_len));
     }
 }
 
@@ -170,14 +147,14 @@ static const zend_function_entry qlabel_methods[] = {
 };
 
 // Initialize class
-void qlabel_init(INIT_FUNC_ARGS)
+void qt_register_QLabel_class()
 {
     zend_class_entry ce;
     INIT_CLASS_ENTRY(ce, "Qt\\Label", qlabel_methods);
-    qlabel_ce = zend_register_internal_class(&ce);
-    qlabel_ce->create_object = qlabel_create_object;
+    qt_ce_QLabel = zend_register_internal_class(&ce);
+    qt_ce_QLabel->create_object = qt_object_new;
     
-    memcpy(&qlabel_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
-    qlabel_object_handlers.offset = XtOffsetOf(qlabel_object, std);
-    qlabel_object_handlers.free_obj = qlabel_free_object;
+    memcpy(&qlabel_object_handlers, &std_object_handlers, sizeof(zend_object_handlers));
+    qlabel_object_handlers.offset = XtOffsetOf(qt_object, std);
+    qlabel_object_handlers.free_obj = qt_object_free;
 }
